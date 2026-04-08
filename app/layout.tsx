@@ -20,10 +20,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: {
-    default: "ByteFeed — Real-world web dev notes",
-    template: "%s · ByteFeed",
-  },
+  title: "ByteFeed",
   description:
     "Practical engineering notes on Next.js, TypeScript, Docker, and backend — written from production experience, not documentation.",
   keywords: ["Next.js", "TypeScript", "React", "Docker", "DevOps", "web development", "performance", "Karel Hribal"],

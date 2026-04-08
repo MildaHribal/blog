@@ -29,7 +29,7 @@ export default function Navbar() {
             Portfolio
           </a>
           <a
-            href="https://github.com/miloslavhribal"
+            href="https://github.com/MildaHribal"
             target="_blank"
             rel="noopener noreferrer"
             className="ml-2 rounded-full border border-zinc-700 px-4 py-1.5 text-sm font-medium text-zinc-300 hover:border-emerald-500 hover:text-emerald-400 transition-colors"

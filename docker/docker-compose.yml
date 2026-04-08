@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blog}
       POSTGRES_DB: ${POSTGRES_DB:-blog}
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER:-blog} -d ${POSTGRES_DB:-blog}"]
       interval: 5s
@@ -20,7 +20,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,3 +35,5 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://blog:blog@postgres:5432/blog?schema=public}
       DIRECT_URL: ${DIRECT_URL:-postgresql://blog:blog@postgres:5432/blog?schema=public}
 
+volumes:
+  postgres_data:

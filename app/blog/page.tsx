@@ -7,7 +7,7 @@ import { getAllPosts, getAllTags } from "@/lib/posts";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "All Posts",
+  title: "ByteFeed",
   description:
     "Browse all posts on Next.js, TypeScript, Docker, backend engineering, and web performance.",
 };

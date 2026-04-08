@@ -1,0 +1,33 @@
+---
+title: "Rate Limiting That Doesn't Hurt UX"
+description: "How to block abuse while keeping normal users productive."
+date: "2026-04-01"
+tags: ["Security", "Backend", "API"]
+author: "Karel Hribal"
+---
+
+Rate limiting can protect systems or annoy customers. The difference is usually granularity.
+
+## Better keys
+
+- authenticated users by user id
+- anonymous users by IP + user-agent fingerprint
+- sensitive endpoints with stricter limits
+
+## Better responses
+
+Return clear `429` with retry hints.
+
+```http
+Retry-After: 30
+```
+
+## Better defaults
+
+Use burst + sustained windows, not only a flat minute bucket.
+
+- burst: 10 req / 10s
+- sustained: 300 req / 10m
+
+You can be strict with bots and generous with humans at the same time.
+

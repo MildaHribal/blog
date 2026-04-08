@@ -1,0 +1,29 @@
+---
+title: "Observability for Small Projects"
+description: "You do not need enterprise tooling to get useful production visibility."
+date: "2026-03-31"
+tags: ["Observability", "DevOps", "Backend"]
+author: "Karel Hribal"
+---
+
+Small products still need fast incident diagnosis.
+
+## Minimal stack that works
+
+- structured logs
+- one error tracker
+- uptime check
+- two dashboards: latency + errors
+
+## Logging rule
+
+Every request should have a request id in logs and downstream calls.
+
+## Start with these alerts
+
+- error rate > baseline
+- p95 latency spike
+- restart loop detected
+
+You can run this cheaply and still debug most issues within minutes.
+

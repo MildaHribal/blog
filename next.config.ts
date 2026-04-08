@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import createMDX from "@next/mdx";
+import remarkGfm from "remark-gfm";
+import remarkFrontmatter from "remark-frontmatter";
+import rehypeSlug from "rehype-slug";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -10,8 +13,8 @@ const nextConfig: NextConfig = {
 const withMDX = createMDX({
   extension: /\.(md|mdx)$/,
   options: {
-    remarkPlugins: ["remark-gfm", "remark-frontmatter"],
-    rehypePlugins: ["rehype-slug"],
+    remarkPlugins: [remarkGfm, remarkFrontmatter],
+    rehypePlugins: [rehypeSlug],
   },
 });
 

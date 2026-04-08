@@ -1,0 +1,35 @@
+---
+title: "Debugging Kubernetes CrashLoopBackOff Fast"
+description: "A repeatable sequence to find the real root cause in under ten minutes."
+date: "2026-04-05"
+tags: ["Kubernetes", "DevOps", "Debugging"]
+author: "Karel Hribal"
+---
+
+When a pod crashes in a loop, guessing is expensive. Use the same sequence every time.
+
+## Quick sequence
+
+```bash
+kubectl get pods -n app
+kubectl describe pod <pod-name> -n app
+kubectl logs <pod-name> -n app --previous
+```
+
+`--previous` is where the useful stack trace usually is.
+
+## Common causes
+
+- missing env vars
+- migration not applied
+- wrong command/entrypoint
+- liveness probe killing slow startup
+
+## Stabilize before fixing
+
+- scale down noisy workers
+- disable aggressive probes temporarily
+- deploy one controlled rollback if needed
+
+Reliable operations come from repeatable triage.
+

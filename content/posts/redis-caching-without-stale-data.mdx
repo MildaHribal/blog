@@ -1,0 +1,45 @@
+---
+title: "Redis Caching Without Serving Stale Data"
+description: "A cache strategy that keeps latency low without lying to users."
+date: "2026-04-08"
+tags: ["Redis", "Caching", "Backend"]
+author: "Karel Hribal"
+---
+
+Caching is easy. Correct caching is not.
+
+## The pattern that worked
+
+- Cache-aside for reads
+- Short TTL for volatile keys
+- Explicit cache invalidation on writes
+- Background refresh for hottest keys
+
+## Key naming
+
+```txt
+user:123:profile
+post:home:latest
+```
+
+Keep keys predictable and include version suffixes when schema changes.
+
+## Avoid stale surprises
+
+On write:
+
+1. Persist to DB
+2. Delete affected keys
+3. Recompute only if the endpoint is hot
+
+For home feeds, stale-while-revalidate is fine. For billing state, never.
+
+## Metrics to watch
+
+- hit ratio
+- key churn
+- Redis memory fragmentation
+- latency p95 during cache misses
+
+Cache correctness is a product decision, not only an infra decision.
+

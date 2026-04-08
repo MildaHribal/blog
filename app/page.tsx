@@ -7,7 +7,7 @@ import TagBadge from "@/components/TagBadge";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "ByteFeed — Real-world web dev notes",
+  title: "ByteFeed",
   description:
     "Practical engineering notes on Next.js, TypeScript, Docker, and backend — written from production experience, not documentation.",
 };
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 export default async function Home() {
   const posts = await getAllPosts();
   const tags = await getAllTags();
-  const featured = posts.slice(0, 3);
-  const recent = posts.slice(3, 7);
+  const featured = posts.slice(0, 4);
+  const recent = posts.slice(4, 16);
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
   const jsonLd = {
@@ -54,6 +54,21 @@ export default async function Home() {
             No fluff — just things that actually work.
           </p>
 
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">Articles</p>
+              <p className="mt-1 text-2xl font-semibold text-zinc-100">{posts.length}</p>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">Topics</p>
+              <p className="mt-1 text-2xl font-semibold text-zinc-100">{tags.length}</p>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">Focus</p>
+              <p className="mt-1 text-2xl font-semibold text-emerald-400">Production</p>
+            </div>
+          </div>
+
           {tags.length > 0 && (
             <div className="mt-8 flex flex-wrap gap-2">
               {tags.map((tag) => (
@@ -72,7 +87,7 @@ export default async function Home() {
             <h2 className="mb-6 text-xs font-semibold uppercase tracking-widest text-zinc-500">
               Latest posts
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featured.map((post) => (
                 <PostCard key={post.slug} post={post} featured />
               ))}
@@ -85,7 +100,7 @@ export default async function Home() {
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-500">
               More posts
             </h2>
-            <div className="flex flex-col gap-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {recent.map((post) => (
                 <PostCard key={post.slug} post={post} />
               ))}

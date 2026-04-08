@@ -24,7 +24,7 @@ export default function Footer() {
               Blog
             </Link>
             <a
-              href="https://github.com/miloslavhribal"
+              href="https://github.com/MildaHribal"
               target="_blank"
               rel="noopener noreferrer"
               className="text-zinc-500 hover:text-zinc-300 transition-colors"
