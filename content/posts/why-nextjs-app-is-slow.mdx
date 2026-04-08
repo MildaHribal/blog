@@ -1,0 +1,102 @@
+---
+title: "Why Your Next.js App Is Slow (and It's Not the Framework)"
+description: "The performance issues I see in most Next.js apps have nothing to do with Next.js."
+date: "2026-01-28"
+tags: ["Next.js", "Performance", "React"]
+author: "Karel Hribal"
+---
+
+I've audited a few Next.js codebases in the past year. The slow ones aren't slow because of Next.js. They're slow for the same three or four reasons.
+
+## Fetching in components that don't need to fetch
+
+This pattern shows up constantly:
+
+```tsx
+"use client";
+
+export function PostList() {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/posts").then(r => r.json()).then(setPosts);
+  }, []);
+
+  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>;
+}
+```
+
+Then this component gets placed on a Server Component page. The page renders instantly on the server, the component hydrates on the client, then kicks off a fetch, then renders again.
+
+The fix: move the data requirement up to the server:
+
+```tsx
+// app/page.tsx
+import { getPosts } from "@/lib/posts";
+
+export default async function Page() {
+  const posts = await getPosts();
+  return <PostList posts={posts} />;
+}
+
+// components/PostList.tsx — no need to be a client component
+export function PostList({ posts }: { posts: Post[] }) {
+  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>;
+}
+```
+
+Zero extra fetches. Zero loading states. Renders with data on first paint.
+
+## Images without dimensions
+
+```tsx
+// This causes layout shift:
+<img src="/hero.jpg" alt="Hero" />
+
+// This reserves space:
+<Image src="/hero.jpg" alt="Hero" width={1200} height={630} />
+```
+
+Next.js's `Image` component with explicit dimensions reserves the right space before the image loads. No layout shift, no Cumulative Layout Shift penalty, better Core Web Vitals score.
+
+If you don't know the dimensions ahead of time, use `fill` with a sized container:
+
+```tsx
+<div style={{ position: "relative", height: "400px" }}>
+  <Image src="/hero.jpg" alt="Hero" fill style={{ objectFit: "cover" }} />
+</div>
+```
+
+## Importing everything from a library
+
+```ts
+import _ from "lodash"; // imports 71kb
+import { debounce } from "lodash"; // still imports everything
+import debounce from "lodash/debounce"; // imports ~2kb
+```
+
+Lodash is the classic example. The same applies to date libraries, icon sets, and utility packages. Import only what you use, check what ends up in the bundle with:
+
+```bash
+npx @next/bundle-analyzer
+```
+
+## Fonts without `display: swap`
+
+If you load Google Fonts without `display: swap`, the browser blocks text rendering until the font is available. Geist Sans loaded via `next/font` handles this correctly. Custom CSS `@import` doesn't unless you add it explicitly.
+
+## Not using `dynamic` for heavy client components
+
+```ts
+import dynamic from "next/dynamic";
+
+const HeavyChartComponent = dynamic(() => import("@/components/Chart"), {
+  loading: () => <p>Loading chart...</p>,
+  ssr: false,
+});
+```
+
+A charting library doesn't need to be in the initial bundle. Lazy-loading it shaves the JS payload for users who never scroll to see it.
+
+Performance is mostly defaults and habits. The right defaults are available in Next.js — you just have to not override them.
+

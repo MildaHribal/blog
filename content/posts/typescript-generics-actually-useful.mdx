@@ -1,0 +1,77 @@
+---
+title: "TypeScript Generics: the Four Patterns I Actually Use"
+description: "Generics look scary until you realize you only need about four of them."
+date: "2026-03-20"
+tags: ["TypeScript", "JavaScript", "Best Practices"]
+author: "Karel Hribal"
+---
+
+Generics are the thing that makes TypeScript feel like a real type system instead of just annotated JavaScript. They're also the thing that makes TypeScript code look unreadable when overused.
+
+Here are the four patterns I keep reaching for.
+
+## 1. Typed API responses
+
+```ts
+async function apiFetch<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+const user = await apiFetch<{ id: string; name: string }>("/api/me");
+// user.id and user.name are typed
+```
+
+One function, any shape. The caller provides the type, the function provides the safety net.
+
+## 2. A nullable wrapper
+
+```ts
+type Maybe<T> = T | null | undefined;
+
+function getFirstItem<T>(items: Maybe<T[]>): T | null {
+  if (!items || items.length === 0) return null;
+  return items[0];
+}
+```
+
+Beats sprinkling `| null | undefined` everywhere. Makes intent explicit.
+
+## 3. A typed event emitter / callback
+
+```ts
+type Handler<T> = (payload: T) => void;
+
+function createEmitter<T>() {
+  const handlers: Handler<T>[] = [];
+  return {
+    on: (h: Handler<T>) => handlers.push(h),
+    emit: (payload: T) => handlers.forEach((h) => h(payload)),
+  };
+}
+
+const clicks = createEmitter<{ x: number; y: number }>();
+clicks.on((e) => console.log(e.x, e.y));
+```
+
+Useful when building small pub/sub systems without pulling in a library.
+
+## 4. Keyof constraints for safe object access
+
+```ts
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
+  return items.map((item) => item[key]);
+}
+
+const names = pluck(users, "name"); // string[]
+const ids = pluck(users, "id");     // string[]
+// pluck(users, "banana")           // TS error ✓
+```
+
+This one saves a lot of runtime errors when building table components or selectors.
+
+## What to avoid
+
+Generics with six type parameters and `extends` constraints three levels deep. That's library territory. Application code should stay readable. If you can't explain the generic in one sentence, you probably don't need one.
+

@@ -1,0 +1,82 @@
+---
+title: "The CSS Property That Gave Me 400ms Back"
+description: "One line of CSS. One layout shift gone. Measurable improvement in LCP."
+date: "2026-03-15"
+tags: ["Performance", "Web Dev", "Best Practices"]
+author: "Karel Hribal"
+---
+
+I spent two days profiling a page that felt sluggish. DevTools Lighthouse was screaming about Cumulative Layout Shift. The culprit was embarrassingly simple.
+
+## What was happening
+
+The page had a grid of cards. Each card had an image loaded from an external CDN. While the images loaded, the cards had no height — so the layout would jump when they arrived.
+
+Standard problem. The fix everyone reaches for:
+
+```css
+img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+```
+
+That fixes the jump. But now you're either cropping or distorting images with non-standard ratios.
+
+## The actual fix: `aspect-ratio`
+
+```css
+.card-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+```
+
+The browser reserves the right amount of space before the image loads. No jump. No hardcoded height that breaks on different screens.
+
+Browser support is 97%+ as of 2026. There's no reason not to use it.
+
+## The LCP improvement
+
+Before: LCP 3.8s (the largest element was shifting, pushing render time)
+After: LCP 2.1s
+
+The images themselves loaded at the same speed. The difference was the browser not having to recalculate layout twice.
+
+## Where else `aspect-ratio` helps
+
+**Video embeds:**
+
+```css
+.video-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+}
+.video-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+```
+
+No more `padding-bottom: 56.25%` hacks. That trick made sense in 2012. It doesn't anymore.
+
+**Skeleton loaders:**
+
+```css
+.skeleton {
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+```
+
+The placeholder matches the image size exactly, so there's zero shift when the real content arrives.
+
+Small CSS, big numbers. Worth auditing your own layouts.
+

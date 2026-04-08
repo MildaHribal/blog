@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blog}
+      POSTGRES_DB: ${POSTGRES_DB:-blog}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER:-blog} -d ${POSTGRES_DB:-blog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-me-in-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://blog:blog@postgres:5432/blog?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://blog:blog@postgres:5432/blog?schema=public}
+

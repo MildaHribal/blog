@@ -1,0 +1,107 @@
+---
+title: "Postgres Queries I Run on Every New Project"
+description: "A short list of diagnostic queries that have saved me from slow pages and mysterious timeouts."
+date: "2026-02-05"
+tags: ["Best Practices", "Web Dev"]
+author: "Karel Hribal"
+---
+
+Every new project eventually becomes a project where the database is the bottleneck. These are the queries I run when that happens.
+
+## What's missing an index?
+
+```sql
+SELECT
+  schemaname,
+  tablename,
+  attname,
+  n_distinct,
+  correlation
+FROM pg_stats
+WHERE tablename = 'posts'
+ORDER BY n_distinct DESC;
+```
+
+Combined with:
+
+```sql
+SELECT
+  relname,
+  seq_scan,
+  seq_tup_read,
+  idx_scan,
+  idx_tup_fetch
+FROM pg_stat_user_tables
+ORDER BY seq_scan DESC;
+```
+
+A high `seq_scan` on a large table means Postgres is reading every row. An index is probably missing.
+
+## Which queries are slowest?
+
+Enable `pg_stat_statements` once (it's an extension, usually already installed on managed Postgres):
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
+Then:
+
+```sql
+SELECT
+  query,
+  calls,
+  total_exec_time / calls AS avg_ms,
+  rows / calls AS avg_rows
+FROM pg_stat_statements
+ORDER BY avg_ms DESC
+LIMIT 10;
+```
+
+This shows the 10 slowest queries by average execution time. Usually the top two or three explain most of the latency.
+
+## What's locked?
+
+```sql
+SELECT
+  pid,
+  now() - pg_stat_activity.query_start AS duration,
+  query,
+  state
+FROM pg_stat_activity
+WHERE state != 'idle'
+  AND query_start IS NOT NULL
+ORDER BY duration DESC;
+```
+
+If a query has been running for 30 seconds, something is wrong. Long-running transactions can hold locks that block everything else.
+
+## Table and index sizes
+
+```sql
+SELECT
+  table_name,
+  pg_size_pretty(pg_total_relation_size(quote_ident(table_name))) AS size
+FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY pg_total_relation_size(quote_ident(table_name)) DESC;
+```
+
+Useful when you hit disk limits on a managed instance and can't tell where the bytes went.
+
+## EXPLAIN ANALYZE: the real diagnostic tool
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT * FROM posts WHERE status = 'PUBLISHED' ORDER BY created_at DESC LIMIT 10;
+```
+
+This runs the query and shows the execution plan with actual timing. Look for:
+- `Seq Scan` on large tables (should be `Index Scan`)
+- High buffer reads (`Buffers: shared hit=0 read=N` means a lot of disk I/O)
+- `Sort` steps after large scans
+
+Paste the output into [explain.dalibo.com](https://explain.dalibo.com) for a visual breakdown.
+
+Knowing three or four of these queries means the difference between "the database is slow" and "this specific query at this table size needs a composite index on `(status, created_at)`."
+

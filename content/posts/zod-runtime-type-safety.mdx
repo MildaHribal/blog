@@ -1,0 +1,110 @@
+---
+title: "Zod: Runtime Type Safety That Actually Makes Sense"
+description: "TypeScript types disappear at runtime. Zod catches what TS can't."
+date: "2026-02-28"
+tags: ["TypeScript", "JavaScript", "Best Practices"]
+author: "Karel Hribal"
+---
+
+TypeScript gives you type safety at compile time. The moment data enters your application from the outside — an API call, a form, a URL param — you're on your own.
+
+Zod closes that gap.
+
+## The problem
+
+```ts
+interface User {
+  id: string;
+  name: string;
+  age: number;
+}
+
+const response = await fetch("/api/user/1");
+const user: User = await response.json(); // TypeScript believes you. Runtime doesn't care.
+```
+
+If the API returns `age: "thirty"` instead of `age: 30`, TypeScript won't catch it. Your code will break later, silently, in a way that's hard to trace back.
+
+## Zod validates the shape at runtime
+
+```ts
+import { z } from "zod";
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  age: z.number(),
+});
+
+type User = z.infer<typeof UserSchema>; // type inferred from schema, stays in sync
+
+const response = await fetch("/api/user/1");
+const raw = await response.json();
+const user = UserSchema.parse(raw); // throws if shape is wrong
+```
+
+`parse` throws on invalid data. `safeParse` returns a result object you can check:
+
+```ts
+const result = UserSchema.safeParse(raw);
+if (!result.success) {
+  console.error(result.error.flatten());
+  return null;
+}
+const user = result.data; // fully typed
+```
+
+## Where I use it
+
+**API route validation in Next.js:**
+
+```ts
+const bodySchema = z.object({
+  title: z.string().min(3),
+  slug: z.string().regex(/^[a-z0-9-]+$/),
+  tags: z.array(z.string()).default([]),
+});
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const parsed = bodySchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  // parsed.data is typed and validated
+}
+```
+
+**Form validation (shared schema):**
+
+```ts
+// lib/validation.ts — used by both client and server
+export const contactSchema = z.object({
+  email: z.string().email(),
+  message: z.string().min(20).max(1000),
+});
+```
+
+One schema, two uses: browser-side feedback and server-side protection.
+
+**Environment variables:**
+
+```ts
+const envSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  ADMIN_PASSWORD: z.string().min(8),
+  NODE_ENV: z.enum(["development", "production", "test"]),
+});
+
+const env = envSchema.parse(process.env);
+// crashes at startup if something is missing — before any user sees an error
+```
+
+This has saved me from deploying with a missing env variable more than once.
+
+## The TypeScript trick
+
+The `z.infer<typeof Schema>` pattern keeps your types in sync with your validation without duplicating anything. Change the schema, the type changes. Delete a field, TypeScript tells you everywhere it was used.
+
+It's one of those things that once you adopt, you can't go back to the old way.
+
