@@ -32,11 +32,9 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # Prisma schema + migration files
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 
-# Prisma CLI + engine binaries for running migrations at startup
-# Note: do NOT copy .bin/prisma symlink — Docker resolves it as a file and breaks __dirname
-COPY --from=builder --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+# Prisma client binaries needed at runtime
 COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=node:node /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 COPY --chown=node:node entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
