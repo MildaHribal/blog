@@ -25,7 +25,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6">
-      {/* Header */}
       <div className="mb-10">
         <h1 className="mb-3 text-3xl font-bold tracking-tight text-zinc-50 sm:text-4xl">
           {tag ? (
@@ -44,7 +43,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        {/* Post list */}
         <div className="min-w-0 flex-1">
           {posts.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800 py-20 text-center">
@@ -65,7 +63,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           )}
         </div>
 
-        {/* Sidebar */}
         <aside className="w-full shrink-0 lg:w-56">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 lg:sticky lg:top-20">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-500">

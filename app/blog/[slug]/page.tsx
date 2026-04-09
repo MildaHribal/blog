@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const post = await getPostBySlug(slug);
   if (!post) return {};
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://bytefeed.tech";
 
   return {
     title: post.title,
@@ -60,7 +60,7 @@ export default async function BlogPostPage({ params }: Params) {
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://bytefeed.tech";
 
   const jsonLd = {
     "@context": "https://schema.org",

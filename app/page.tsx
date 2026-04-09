@@ -18,7 +18,7 @@ export default async function Home() {
   const featured = posts.slice(0, 4);
   const recent = posts.slice(4, 16);
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://bytefeed.tech";
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Blog",

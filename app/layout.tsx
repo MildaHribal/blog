@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://blog.hribal.dev";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://bytefeed.tech";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

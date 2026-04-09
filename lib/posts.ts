@@ -56,7 +56,6 @@ function readMdxPosts(includeDrafts = false): PostMeta[] {
         source: "mdx" as const,
       };
     })
-    .filter(() => includeDrafts || true)
     .sort((a, b) => parseDateSafe(b.date).getTime() - parseDateSafe(a.date).getTime());
 }
 
