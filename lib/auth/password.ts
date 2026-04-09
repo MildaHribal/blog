@@ -1,8 +1,7 @@
 export function verifyAdminCredentials(username: string, password: string): boolean {
-  const adminUsername = process.env.ADMIN_USERNAME;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminUsername || !adminPassword) {
-    throw new Error("Missing ADMIN_USERNAME or ADMIN_PASSWORD env var");
+  const { ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    throw new Error("ADMIN_USERNAME or ADMIN_PASSWORD env var is not set");
   }
-  return username === adminUsername && password === adminPassword;
+  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
 }

@@ -6,7 +6,6 @@ import remarkGfm from "remark-gfm";
 import TagBadge from "@/components/TagBadge";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 
-export const dynamicParams = false;
 
 interface Params {
   params: Promise<{ slug: string }>;

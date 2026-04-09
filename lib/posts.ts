@@ -29,55 +29,20 @@ interface QueryOptions {
   includeDrafts?: boolean;
 }
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
-
 function parseDateSafe(dateStr: string): Date {
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date(0) : d;
 }
 
-function getAllPostsFromFiles(includeDrafts = false): PostMeta[] {
+function readMdxPosts(includeDrafts = false): PostMeta[] {
   if (!fs.existsSync(POSTS_DIR)) return [];
 
-  const files = fs
+  return fs
     .readdirSync(POSTS_DIR)
-    .filter((f) => f.endsWith(".mdx") || f.endsWith(".md"));
-
-  const posts = files.map((filename) => {
-    const slug = filename.replace(/\.(mdx|md)$/, "");
-    const filePath = path.join(POSTS_DIR, filename);
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const { data, content } = matter(raw);
-    return {
-      slug,
-      title: data.title ?? slug,
-      description: data.description ?? "",
-      date: data.date ? String(data.date) : new Date().toISOString(),
-      tags: Array.isArray(data.tags) ? data.tags : [],
-      coverImage: data.coverImage ?? undefined,
-      author: data.author ?? "Karel",
-      readingTime: estimateReadingLabel(content),
-      source: "mdx",
-      status: "PUBLISHED",
-    } satisfies PostMeta & { status: "PUBLISHED" };
-  });
-
-  const visiblePosts = includeDrafts
-    ? posts
-    : posts.filter((post) => post.status === "PUBLISHED");
-
-  return visiblePosts.sort(
-    (a, b) =>
-      parseDateSafe(b.date).getTime() - parseDateSafe(a.date).getTime()
-  );
-}
-
-function getPostBySlugFromFiles(slug: string): Post | null {
-  const extensions = [".mdx", ".md"];
-  for (const ext of extensions) {
-    const filePath = path.join(POSTS_DIR, `${slug}${ext}`);
-    if (fs.existsSync(filePath)) {
-      const raw = fs.readFileSync(filePath, "utf-8");
+    .filter((f) => f.endsWith(".mdx") || f.endsWith(".md"))
+    .map((filename) => {
+      const slug = filename.replace(/\.(mdx|md)$/, "");
+      const raw = fs.readFileSync(path.join(POSTS_DIR, filename), "utf-8");
       const { data, content } = matter(raw);
       return {
         slug,
@@ -88,96 +53,102 @@ function getPostBySlugFromFiles(slug: string): Post | null {
         coverImage: data.coverImage ?? undefined,
         author: data.author ?? "Karel",
         readingTime: estimateReadingLabel(content),
-        content,
-        source: "mdx",
-        status: "PUBLISHED",
+        source: "mdx" as const,
       };
-    }
+    })
+    .filter(() => includeDrafts || true)
+    .sort((a, b) => parseDateSafe(b.date).getTime() - parseDateSafe(a.date).getTime());
+}
+
+function readMdxPost(slug: string): Post | null {
+  for (const ext of [".mdx", ".md"]) {
+    const filePath = path.join(POSTS_DIR, `${slug}${ext}`);
+    if (!fs.existsSync(filePath)) continue;
+    const { data, content } = matter(fs.readFileSync(filePath, "utf-8"));
+    return {
+      slug,
+      title: data.title ?? slug,
+      description: data.description ?? "",
+      date: data.date ? String(data.date) : new Date().toISOString(),
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      coverImage: data.coverImage ?? undefined,
+      author: data.author ?? "Karel",
+      readingTime: estimateReadingLabel(content),
+      content,
+      source: "mdx",
+    };
   }
   return null;
 }
 
 export async function getAllPosts(options: QueryOptions = {}): Promise<PostMeta[]> {
-  const includeDrafts = options.includeDrafts ?? false;
+  const { includeDrafts = false } = options;
 
-  if (!hasDatabaseUrl) {
-    return getAllPostsFromFiles(includeDrafts);
+  if (!process.env.DATABASE_URL) {
+    return readMdxPosts(includeDrafts);
   }
 
   try {
-    const dbPosts = await db.post.findMany({
+    const rows = await db.post.findMany({
       where: includeDrafts ? undefined : { status: PostStatus.PUBLISHED },
-      orderBy: [
-        { publishedAt: "desc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     });
 
-    if (dbPosts.length > 0) {
-      return dbPosts.map((post) => ({
-        id: post.id,
-        slug: post.slug,
-        title: post.title,
-        description: post.description,
-        date: (post.publishedAt ?? post.createdAt).toISOString(),
-        tags: post.tags,
-        coverImage: post.coverImage ?? undefined,
-        author: post.author,
-        readingTime: estimateReadingLabel(post.content),
-        source: "db",
+    if (rows.length > 0) {
+      return rows.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        date: (p.publishedAt ?? p.createdAt).toISOString(),
+        tags: p.tags,
+        coverImage: p.coverImage ?? undefined,
+        author: p.author,
+        readingTime: estimateReadingLabel(p.content),
+        source: "db" as const,
       }));
     }
   } catch {
-    // DB unavailable — fall back to MDX files.
+    // fall through
   }
 
-  return getAllPostsFromFiles(includeDrafts);
+  return readMdxPosts(includeDrafts);
 }
 
-export async function getPostBySlug(
-  slug: string,
-  options: QueryOptions = {}
-): Promise<Post | null> {
-  const includeDrafts = options.includeDrafts ?? false;
+export async function getPostBySlug(slug: string, options: QueryOptions = {}): Promise<Post | null> {
+  const { includeDrafts = false } = options;
 
-  if (!hasDatabaseUrl) {
-    return getPostBySlugFromFiles(slug);
+  if (!process.env.DATABASE_URL) {
+    return readMdxPost(slug);
   }
 
   try {
-    const post = await db.post.findUnique({ where: { slug } });
-
-    if (post) {
-      if (!includeDrafts && post.status !== PostStatus.PUBLISHED) {
-        return null;
-      }
-
+    const p = await db.post.findUnique({ where: { slug } });
+    if (p) {
+      if (!includeDrafts && p.status !== PostStatus.PUBLISHED) return null;
       return {
-        id: post.id,
-        slug: post.slug,
-        title: post.title,
-        description: post.description,
-        date: (post.publishedAt ?? post.createdAt).toISOString(),
-        tags: post.tags,
-        coverImage: post.coverImage ?? undefined,
-        author: post.author,
-        readingTime: estimateReadingLabel(post.content),
-        content: post.content,
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        date: (p.publishedAt ?? p.createdAt).toISOString(),
+        tags: p.tags,
+        coverImage: p.coverImage ?? undefined,
+        author: p.author,
+        readingTime: estimateReadingLabel(p.content),
+        content: p.content,
         source: "db",
-        status: post.status,
+        status: p.status,
       };
     }
   } catch {
-    // fall through to MDX
+    // fall through
   }
 
-  return getPostBySlugFromFiles(slug);
+  return readMdxPost(slug);
 }
 
 export async function getAllTags(options: QueryOptions = {}): Promise<string[]> {
   const posts = await getAllPosts(options);
-  const tags = new Set<string>();
-  posts.forEach((post) => post.tags.forEach((tag) => tags.add(tag)));
-  return Array.from(tags).sort();
+  return [...new Set(posts.flatMap((p) => p.tags))].sort();
 }
-

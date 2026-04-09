@@ -6,32 +6,32 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setBusy(true);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
+    const data = new FormData(e.currentTarget);
     const payload = {
-      username: String(formData.get("username") ?? ""),
-      password: String(formData.get("password") ?? ""),
+      username: String(data.get("username") ?? ""),
+      password: String(data.get("password") ?? ""),
     };
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const json = (await response.json()) as { error?: string };
-      if (!response.ok) {
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
         setError(json.error ?? "Login failed.");
       } else {
-        window.location.reload();
+        window.location.href = "/admin";
       }
     } catch {
-      setError("Unexpected error.");
+      setError("Unexpected error, try again.");
     } finally {
       setBusy(false);
     }
@@ -42,7 +42,7 @@ export default function LoginForm() {
       <input
         name="username"
         type="text"
-        className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm"
+        className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
         placeholder="Username"
         autoComplete="username"
         required
@@ -50,7 +50,7 @@ export default function LoginForm() {
       <input
         name="password"
         type="password"
-        className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm"
+        className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
         placeholder="Password"
         autoComplete="current-password"
         required
@@ -58,11 +58,11 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+        className="w-full rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400 disabled:opacity-60"
       >
         {busy ? "Signing in…" : "Sign in"}
       </button>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {error && <p className="text-sm text-rose-400">{error}</p>}
     </form>
   );
 }

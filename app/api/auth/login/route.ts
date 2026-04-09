@@ -6,24 +6,23 @@ import { loginSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const parsed = loginSchema.safeParse(json);
+    const body = await request.json();
+    const parsed = loginSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
     }
 
     const { username, password } = parsed.data;
 
-    const valid = verifyAdminCredentials(username, password);
-    if (!valid) {
+    if (!verifyAdminCredentials(username, password)) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
     const token = await createAdminSessionToken({ role: "admin", username });
+    const jar = await cookies();
 
-    const cookieStore = await cookies();
-    cookieStore.set(ADMIN_COOKIE_NAME, token, {
+    jar.set(ADMIN_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -32,7 +31,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("[login]", err);
     return NextResponse.json({ error: "Login failed." }, { status: 500 });
   }
 }
