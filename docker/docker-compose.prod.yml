@@ -1,0 +1,35 @@
+services:
+  migrate:
+    image: ghcr.io/mildahribal/blog:latest
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+    env_file: ../.env
+    networks:
+      - web
+
+  bytefeed-app:
+    image: ghcr.io/mildahribal/blog:latest
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_BASE_URL: https://bytefeed.tech
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bytefeed.rule=Host(`bytefeed.tech`) || Host(`www.bytefeed.tech`)"
+      - "traefik.http.routers.bytefeed.entrypoints=websecure"
+      - "traefik.http.routers.bytefeed.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bytefeed.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.bytefeed-www.redirectregex.regex=^https://www\\.bytefeed\\.tech/(.*)"
+      - "traefik.http.middlewares.bytefeed-www.redirectregex.replacement=https://bytefeed.tech/$${1}"
+      - "traefik.http.middlewares.bytefeed-www.redirectregex.permanent=true"
+      - "traefik.http.routers.bytefeed.middlewares=bytefeed-www"
+
+networks:
+  web:
+    external: true
+
