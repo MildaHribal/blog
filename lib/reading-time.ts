@@ -17,3 +17,5 @@ export function estimateReadingLabel(text: string, wordsPerMinute = DEFAULT_WORD
   return `${minutes} min read`;
 }
 
+
+
